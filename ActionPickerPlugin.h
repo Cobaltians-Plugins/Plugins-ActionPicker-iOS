@@ -6,7 +6,7 @@
 //  Copyright (c) 2015 Kristal. All rights reserved.
 //
 
-#import "CobaltAbstractPlugin.h"
+#import <Cobalt/CobaltAbstractPlugin.h>
 
 
 @interface ActionPickerPlugin : CobaltAbstractPlugin <UIActionSheetDelegate>
