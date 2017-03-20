@@ -53,7 +53,11 @@
         
         UIAlertAction * cancelAction = [UIAlertAction actionWithTitle:cancel
                                                                 style:UIAlertActionStyleCancel
-                                                              handler:^(UIAlertAction *action){}];
+                                                              handler:^(UIAlertAction *action){
+                                                                  [_viewController sendCallback:_actionSheetCallback
+                                                                                       withData:@{@"index": @(-1)}];
+                                                                  _actionSheetCallback = nil;
+                                                              }];
         [actionSheet addAction:cancelAction];
         
         NSUInteger actionsCount = [actions count];
@@ -116,11 +120,16 @@
 
 
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
-    if (buttonIndex != [actionSheet cancelButtonIndex]) {
-        [_viewController sendCallback:_actionSheetCallback
-                             withData:@{@"index": @(buttonIndex)}];
+    NSDictionary *data = nil;
+    if (buttonIndex == [actionSheet cancelButtonIndex]) {
+        data = @{@"index": @(-1)};
+    }
+    else {
+        data = @{@"index": @(buttonIndex)};
     }
     
+    [_viewController sendCallback:_actionSheetCallback
+                         withData:data];
     _actionSheetCallback = nil;
 }
 
