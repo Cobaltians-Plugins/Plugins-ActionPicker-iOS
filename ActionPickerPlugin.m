@@ -7,39 +7,34 @@
 //
 
 #import "ActionPickerPlugin.h"
+#import <Cobalt/PubSub.h>
 
 @implementation ActionPickerPlugin
 
+- (void)onMessageFromWebView:(WebViewType)webView
+          inCobaltController:(nonnull CobaltViewController *)viewController
+                  withAction:(nonnull NSString *)action
+                        data:(nullable NSDictionary *)data
+          andCallbackChannel:(nullable NSString *)callbackChannel
+{
+    if ([action isEqualToString:@"getAction"]
+        && callbackChannel != nil)
+    {
+        NSArray * actions = [data objectForKey:@"actions"];
+        NSString * cancel = [data objectForKey:@"cancel"];
+        NSString * text = [data objectForKey: @"text"];
+        
+        if (actions != nil && [actions isKindOfClass:[NSArray class]]
+            && cancel != nil && [cancel isKindOfClass:[NSString class]]) {
+            _actionSheetCallback = callbackChannel;
+            _viewController = viewController;
+            [self presentActionSheetWithActions:actions
+                                         cancel:cancel
+                                        andText:text];
 
-- (void)onMessageFromCobaltController:(CobaltViewController *)viewController andData: (NSDictionary *)message {
-   
-    _viewController = viewController;
-    
-    NSDictionary * data = [message objectForKey:kJSData];
-    if (data != nil
-        && [message isKindOfClass:[NSDictionary class]]) {
-        NSString * pickerType = [message objectForKey:kJSType];
-        NSString * callback = [message objectForKey:kJSCallback];
-        
-            if (pickerType != nil
-                && [pickerType isKindOfClass:[NSString class]]
-                && [pickerType isEqualToString: @"plugin"]) {
-                NSArray * actions = [data objectForKey:@"actions"];
-                NSString * cancel = [data objectForKey:@"cancel"];
-                NSString * text = [data objectForKey: @"text"];
-                    
-                if (actions != nil && [actions isKindOfClass:[NSArray class]]
-                    && cancel != nil && [cancel isKindOfClass:[NSString class]]) {
-                    _actionSheetCallback = callback;
-                    [self presentActionSheetWithActions:actions
-                                                cancel:cancel
-                                                andText:text];
-            }
         }
-        
     }
 }
-
 
 - (void)presentActionSheetWithActions:(NSArray *)actions
                                cancel:(NSString *)cancel
@@ -54,8 +49,9 @@
         UIAlertAction * cancelAction = [UIAlertAction actionWithTitle:cancel
                                                                 style:UIAlertActionStyleCancel
                                                               handler:^(UIAlertAction *action){
-                                                                  [_viewController sendCallback:_actionSheetCallback
-                                                                                       withData:@{@"index": @(-1)}];
+                                                                  NSDictionary * data = @{@"index": @(-1)};
+                                                                  [[PubSub sharedInstance] publishMessage:data
+                                                                                                toChannel:_actionSheetCallback];
                                                                   _actionSheetCallback = nil;
                                                               }];
         [actionSheet addAction:cancelAction];
@@ -67,7 +63,8 @@
                                                                  handler:^(UIAlertAction *action)
                                            {
                                                NSDictionary * data = @{@"index": @(i)};
-                                               [_viewController sendCallback:_actionSheetCallback withData:data];
+                                               [[PubSub sharedInstance] publishMessage: data
+                                                                             toChannel:_actionSheetCallback];
                                                _actionSheetCallback = nil;
                                            }];
             [actionSheet addAction:otherAction];
@@ -128,8 +125,8 @@
         data = @{@"index": @(buttonIndex)};
     }
     
-    [_viewController sendCallback:_actionSheetCallback
-                         withData:data];
+    [[PubSub sharedInstance] publishMessage: data
+                                  toChannel:_actionSheetCallback];
     _actionSheetCallback = nil;
 }
 
